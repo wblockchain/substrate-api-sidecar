@@ -3,7 +3,8 @@ use core::str::FromStr;
 use log::info;
 use serde_derive::Deserialize;
 use sp_arithmetic::{FixedI128, FixedPointNumber, FixedU128, Perbill};
-use sp_arithmetic_legacy::Fixed128 as Fixed128Legacy;
+// use sp_arithmetic_legacy::Fixed128 as Fixed128Legacy;
+use crate::legacy_fixed128::Fixed128 as Fixed128Legacy;
 use wasm_bindgen::prelude::*;
 
 type Balance = u128;
