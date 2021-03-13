@@ -1,5 +1,6 @@
+import { ModuleExtrinsics } from '@polkadot/metadata/decorate/types';
 import { Call } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types/codec';
+import { Codec } from '@polkadot/types/types';
 import { stringCamelCase } from '@polkadot/util';
 
 import { decoratedKusamaMetadata } from './metadata/decorated';
@@ -22,15 +23,21 @@ export function createCall(
 	pallet: string,
 	method: string,
 	args: CallArgs
-): Call {
+): Call | void {
 	// Get the call signature
-	const call = decoratedKusamaMetadata.tx[pallet][method];
+	const call =
+		decoratedKusamaMetadata.tx[pallet] &&
+		((decoratedKusamaMetadata.tx[pallet] as unknown) as ModuleExtrinsics)[
+			method
+		];
 
-	return call(
-		// Map over arguments to call and key into the users args to get the values
-		// We are making the assumption that meta.args will have correct ordering
-		...call.meta.args.map((arg) => {
-			return args[stringCamelCase(arg.name.toString())];
-		})
-	);
+	if (call?.meta?.args) {
+		return call(
+			// Map over arguments to call and key into the users args to get the values
+			// We are making the assumption that meta.args will have correct ordering
+			...call?.meta?.args?.map((arg) => {
+				return args[stringCamelCase(arg.name.toString())];
+			})
+		);
+	}
 }

@@ -1,6 +1,11 @@
 import { ApiPromise } from '@polkadot/api';
 import { expandMetadata } from '@polkadot/metadata/decorate';
-import { Compact, GenericCall, Struct } from '@polkadot/types';
+import {
+	Compact,
+	GenericCall,
+	GenericExtrinsic,
+	Struct,
+} from '@polkadot/types';
 import { AbstractInt } from '@polkadot/types/codec/AbstractInt';
 import {
 	AccountId,
@@ -14,11 +19,11 @@ import {
 	Hash,
 	WeightPerClass,
 } from '@polkadot/types/interfaces';
-import { AnyJson, Codec, Registry } from '@polkadot/types/types';
+import { AnyJson, AnyTuple, Codec, Registry } from '@polkadot/types/types';
 import { u8aToHex } from '@polkadot/util';
 import { blake2AsU8a } from '@polkadot/util-crypto';
 import { CalcFee } from '@substrate/calc';
-import { BadRequest } from 'http-errors';
+import { BadRequest, InternalServerError } from 'http-errors';
 
 import {
 	IBlock,
@@ -47,6 +52,11 @@ interface FetchBlockOptions {
 	queryFinalizedHead: boolean;
 	omitFinalizedTag: boolean;
 }
+
+/**
+ * Extrinsic returned from a polkadot-js query.
+ */
+type Ext = GenericExtrinsic<AnyTuple> & { info: unknown };
 
 /**
  * Event methods that we check for.
@@ -167,20 +177,24 @@ export class BlocksService extends AbstractService {
 		} = await this.createCalcFee(api, parentHash, block);
 
 		for (let idx = 0; idx < block.extrinsics.length; ++idx) {
-			if (!extrinsics[idx].paysFee || !block.extrinsics[idx].isSigned) {
+			if (
+				!extrinsics[idx] ||
+				!extrinsics[idx]?.paysFee ||
+				!block.extrinsics[idx]?.isSigned
+			) {
 				continue;
 			}
 
 			if (calcFee === null || calcFee === undefined) {
-				extrinsics[idx].info = {
+				((extrinsics[idx] as unknown) as Ext).info = {
 					error: `Fee calculation not supported for ${specName}#${specVersion}`,
 				};
 				continue;
 			}
 
 			try {
-				const xtEvents = extrinsics[idx].events;
-				const completedEvent = xtEvents.find(
+				const xtEvents = extrinsics[idx]?.events;
+				const completedEvent = xtEvents?.find(
 					({ method }) =>
 						isFrameMethod(method) &&
 						(method.method === Event.success ||
@@ -188,7 +202,7 @@ export class BlocksService extends AbstractService {
 				);
 
 				if (!completedEvent) {
-					extrinsics[idx].info = {
+					((extrinsics[idx] as unknown) as Ext).info = {
 						error:
 							'Unable to find success or failure event for extrinsic',
 					};
@@ -198,7 +212,7 @@ export class BlocksService extends AbstractService {
 
 				const completedData = completedEvent.data;
 				if (!completedData) {
-					extrinsics[idx].info = {
+					((extrinsics[idx] as unknown) as Ext).info = {
 						error:
 							'Success or failure event for extrinsic does not contain expected data',
 					};
@@ -212,7 +226,7 @@ export class BlocksService extends AbstractService {
 					completedData.length - 1
 				] as DispatchInfo;
 				if (!weightInfo.weight) {
-					extrinsics[idx].info = {
+					((extrinsics[idx] as unknown) as Ext).info = {
 						error:
 							'Success or failure event for extrinsic does not specify weight',
 					};
@@ -238,7 +252,7 @@ export class BlocksService extends AbstractService {
 				let extrinsicBaseWeight;
 				if (runtimeDoesNotMatch) {
 					if (!decorated) {
-						extrinsics[idx].info = {
+						((extrinsics[idx] as unknown) as Ext).info = {
 							error:
 								'Failure retrieving necessary decorated metadata',
 						};
@@ -250,20 +264,25 @@ export class BlocksService extends AbstractService {
 						((decorated.consts.system
 							?.extrinsicBaseWeight as unknown) as AbstractInt) ||
 						(((decorated.consts.system
-							?.blockWeights as unknown) as BlockWeights)
-							.perClass[weightInfoClass] as WeightPerClass)
-							.baseExtrinsic;
+							?.blockWeights as unknown) as BlockWeights).perClass.get(
+							weightInfoClass
+						) as WeightPerClass).baseExtrinsic;
 				} else {
 					// We are querying a runtime that matches the decorated metadata in the api
 					extrinsicBaseWeight =
 						(api.consts.system
 							?.extrinsicBaseWeight as AbstractInt) ||
-						(api.consts.system.blockWeights.perClass[
+						(api.consts.system.blockWeights.perClass.get(
 							weightInfoClass
-						] as WeightPerClass).baseExtrinsic;
+						) as WeightPerClass).baseExtrinsic;
 				}
 
-				const len = block.extrinsics[idx].encodedLength;
+				const len = block?.extrinsics[idx]?.encodedLength;
+				if (!(typeof len === 'number')) {
+					throw new InternalServerError(
+						'Expected a number for block?.extrinsics[idx]?.encodedLength'
+					);
+				}
 				const weight = weightInfo.weight;
 
 				const partialFee = calcFee.calc_fee(
@@ -272,14 +291,19 @@ export class BlocksService extends AbstractService {
 					extrinsicBaseWeight.toBigInt()
 				);
 
-				extrinsics[idx].info = api.createType('RuntimeDispatchInfo', {
-					weight,
-					class: weightInfo.class,
-					partialFee: partialFee,
-				});
+				((extrinsics[idx] as unknown) as Ext).info = api.createType(
+					'RuntimeDispatchInfo',
+					{
+						weight,
+						class: weightInfo.class,
+						partialFee: partialFee,
+					}
+				);
 			} catch (err) {
 				console.error(err);
-				extrinsics[idx].info = { error: 'Unable to fetch fee info' };
+				((extrinsics[idx] as unknown) as Ext).info = {
+					error: 'Unable to fetch fee info',
+				};
 			}
 		}
 

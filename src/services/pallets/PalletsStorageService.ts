@@ -1,3 +1,4 @@
+// import { GenericStorageEntryFunction } from '@polkadot/api/types/storage';
 import { Text, Vec } from '@polkadot/types';
 import {
 	BlockHash,
@@ -53,9 +54,17 @@ export class PalletsStorageService extends AbstractService {
 			);
 		}
 
+		const { api } = this;
+		// Typings for api queries with variables. We can safely assert the types becase `findStorageItemMeta`
+		// and `findPalletMeta` throw with informative errors if either does not exist in the metadata.
+		type PalletQuery = typeof api.query[typeof palletName];
+		type CurrentPalletQuery = typeof api.query[typeof palletName][typeof storageItemId];
 		const [value, { number }] = await Promise.all([
-			this.api.query[palletName][storageItemId].at(hash, key1, key2),
-			this.api.rpc.chain.getHeader(hash),
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+			((api.query[palletName] as PalletQuery)[
+				storageItemId
+			] as CurrentPalletQuery).at(hash, key1, key2),
+			api.rpc.chain.getHeader(hash),
 		]);
 
 		return {
@@ -156,7 +165,7 @@ export class PalletsStorageService extends AbstractService {
 			);
 		}
 
-		return palletMetaStorage[storageItemMetaIdx];
+		return palletMetaStorage[storageItemMetaIdx] as StorageEntryMetadataV12;
 	}
 
 	/**
