@@ -641,7 +641,10 @@ export class BlocksService extends AbstractService {
 		genericCall: GenericCall,
 		registry: Registry
 	): ISanitizedCall {
-		const newArgs = {};
+		const newArgs = {} as Record<
+			string,
+			ISanitizedCall | (ISanitizedCall | Codec)[] | Codec | undefined
+		>;
 
 		// Pull out the struct of arguments to this call
 		const callArgs = genericCall.get('args') as Struct;

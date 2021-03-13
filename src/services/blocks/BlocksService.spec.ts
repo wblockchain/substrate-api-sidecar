@@ -161,7 +161,9 @@ describe('BlocksService', () => {
 				1000000
 			) as BalanceOf & AugmentedConst<'promise'>;
 
-			expect(responseObj.extrinsics[3].info).toEqual({
+			expect(
+				((responseObj.extrinsics[3] as unknown) as IExtrinsic).info
+			).toEqual({
 				error: 'Fee calculation not supported for 16#polkadot',
 			});
 		});
@@ -202,7 +204,7 @@ describe('BlocksService', () => {
 				'AccountId',
 				'14E5nqKAp3oAJcmzgZhUD2RcptBeUBScxKHgJKU4HPNcKVf3'
 			), // Bob
-		});
+		}) as GenericCall;
 
 		const transferOutput = {
 			method: {
@@ -237,19 +239,19 @@ describe('BlocksService', () => {
 		it('parses utility.batch nested 4 deep', () => {
 			const batch1 = createCall('utility', 'batch', {
 				calls: [transfer],
-			});
+			}) as GenericCall;
 
 			const batch2 = createCall('utility', 'batch', {
 				calls: [batch1, transfer],
-			});
+			}) as GenericCall;
 
 			const batch3 = createCall('utility', 'batch', {
 				calls: [batch2, transfer],
-			});
+			}) as GenericCall;
 
 			const batch4 = createCall('utility', 'batch', {
 				calls: [batch3, transfer],
-			});
+			}) as GenericCall;
 
 			const baseBatch = {
 				method: {
@@ -308,15 +310,15 @@ describe('BlocksService', () => {
 			const proxy = createCall('proxy', 'proxy', {
 				forceProxyType: 'Any',
 				call: transfer,
-			});
+			}) as GenericCall;
 
 			const sudo = createCall('sudo', 'sudo', {
 				call: proxy,
-			});
+			}) as GenericCall;
 
 			const batch = createCall('utility', 'batch', {
 				calls: [sudo, sudo, sudo],
-			});
+			}) as GenericCall;
 
 			const sudoOutput = {
 				method: {
