@@ -405,18 +405,17 @@ const leasesTupleTwo = typeFactory.tupleOf(
 );
 const parasOptionsOne = typeFactory.optionOf(leasesTupleOne);
 const parasOptionsTwo = typeFactory.optionOf(leasesTupleTwo);
-const vectorLeases = typeFactory.vecOf([parasOptionsOne, parasOptionsTwo]);
 
 export const slotsLeasesAt = (): Promise<Vec<Option<Tuple>>> =>
 	Promise.resolve().then(() => {
-		return vectorLeases;
+		return typeFactory.vecOf([parasOptionsOne, parasOptionsTwo]);
 	});
 
 const slotsLeasesEntriesAt = () =>
 	Promise.resolve().then(() => {
 		return [
-			[paraId1, vectorLeases],
-			[paraId2, vectorLeases],
+			typeFactory.vecOf([paraId1, parasOptionsOne]),
+			typeFactory.vecOf([paraId2, parasOptionsTwo]),
 		];
 	});
 
@@ -462,9 +461,9 @@ const auctionsWinningsAt = () =>
 		const parasOptionsOne = typeFactory.optionOf(tupleOne);
 		const parasOptionsTwo = typeFactory.optionOf(tupleTwo);
 
-		// Instead of using emptyOption here we use optionOf since we need the 
+		// Instead of using emptyOption here we use optionOf since we need the
 		// winning data options to consist of tuples. This will also help satisfy the 10
-		// options we need for a LEASE_PERIODS_PER_SLOT_FALLBACK of 4. 
+		// options we need for a LEASE_PERIODS_PER_SLOT_FALLBACK of 4.
 		const emptyTuple = typeFactory.tupleOf([], []);
 		const emptyOption = typeFactory.optionOf(emptyTuple);
 		const mockWinningOptions = new Array(8).fill(
