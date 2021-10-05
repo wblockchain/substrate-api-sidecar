@@ -1,3 +1,5 @@
+import cluster from 'cluster';
+import { cpus } from 'os';
 import express from 'express';
 import {
 	Application,
@@ -81,12 +83,25 @@ export default class App {
 	}
 
 	listen(): void {
-		this.app.listen(this.port, this.host, () => {
-			console.log(`Listening on http://${this.host}:${this.port}/`);
-			console.log(
-				`Check the root endpoint (http://${this.host}:${this.port}/) to see the available endpoints for the current node`
-			);
-		});
+		const numCPUs = cpus().length
+		if (cluster.isMaster) {
+			for (let i = 0; i < numCPUs; i++) {
+				cluster.fork();
+			}
+			cluster.on('online', function (worker) {
+				console.log('Worker ' + worker.process.pid + ' is online.');
+			});
+			cluster.on('exit', function (worker) {
+				console.log('worker ' + worker.process.pid + ' died.');
+			});
+		} else {
+			this.app.listen(this.port, this.host, () => {
+				console.log(`Listening on http://${this.host}:${this.port}/`);
+				console.log(
+					`Check the root endpoint (http://${this.host}:${this.port}/) to see the available endpoints for the current node`
+				);
+			});
+		}
 	}
 
 	/**
