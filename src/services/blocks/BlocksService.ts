@@ -119,7 +119,6 @@ export class BlocksService extends AbstractService {
 		// 		? api.rpc.chain.getFinalizedHead()
 		// 		: Promise.resolve(hash),
 		// ]);
-		console.timeEnd('Init-Promise.all');
 
 		if (block === undefined) {
 			throw new InternalServerError('Error querying for block');
