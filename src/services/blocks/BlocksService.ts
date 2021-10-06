@@ -132,22 +132,18 @@ export class BlocksService extends AbstractService {
 			return { type, index, value };
 		});
 
-		console.time('nonSanitizedExtrinsics')
 		const nonSanitizedExtrinsics = this.extractExtrinsics(
 			block,
 			events,
 			extrinsicDocs
 		);
-		console.timeEnd('nonSanitizedExtrinsics')
 
-		console.time('sanitizeEvents')
 		const { extrinsics, onInitialize, onFinalize } = this.sanitizeEvents(
 			events,
 			nonSanitizedExtrinsics,
 			hash,
 			eventDocs
 		);
-		console.timeEnd('sanitizeEvents')
 
 		let finalized = undefined;
 
