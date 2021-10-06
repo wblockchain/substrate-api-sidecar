@@ -98,38 +98,18 @@ export class BlocksService extends AbstractService {
 		if (isBlockCached) {
 			return isBlockCached;
 		}
-		console.time('Init-Promise.all');
 
-		// console.time('Derive Block');
-		// const deriveBlock = await api.derive.chain.getBlock(hash);
-		// console.timeEnd('Derive Block')
-
-		console.time('monkey patched Derive')
-		console.time('newValidators')
 		const newValidators = await api.query.session.validators.at(hash);
-		console.timeEnd('newValidators')
-
-		console.time('newBlock')
 		const newBlock = await api.rpc.chain.getBlock(hash);
 		const block = newBlock.block
-		console.timeEnd('newBlock')
 
-		console.time('newDigest')
 		const newDigest = block.header.digest;
-		console.timeEnd('newDigest')
 
-		console.time('extractAuthor')
 		const authorId = extractAuthor(newDigest, newValidators);
-		console.timeEnd('extractAuthor')
-		console.timeEnd('monkey patched Derive')
 
-		console.time('FetchEvents')
 		const events = await this.fetchEvents(api, hash);
-		console.timeEnd('FetchEvents')
 
-		console.time('FinalizedHead')
 		const finalizedHead = queryFinalizedHead ? await api.rpc.chain.getFinalizedHead() : await Promise.resolve(hash)
-		console.timeEnd('FinalizedHead')
 
 		
 		// const [deriveBlock, events, finalizedHead] = await Promise.all([
