@@ -2,6 +2,7 @@ import { ApiPromise } from '@polkadot/api';
 import { expandMetadata } from '@polkadot/types';
 import { Compact, GenericCall, Struct, Vec } from '@polkadot/types';
 import { AbstractInt } from '@polkadot/types/codec/AbstractInt';
+import { extractAuthor } from '@polkadot/api-derive/type/util';
 import {
 	Block,
 	BlockHash,
@@ -97,19 +98,53 @@ export class BlocksService extends AbstractService {
 		if (isBlockCached) {
 			return isBlockCached;
 		}
+		console.time('Init-Promise.all');
 
-		const [deriveBlock, events, finalizedHead] = await Promise.all([
-			api.derive.chain.getBlock(hash),
-			this.fetchEvents(api, hash),
-			queryFinalizedHead
-				? api.rpc.chain.getFinalizedHead()
-				: Promise.resolve(hash),
-		]);
+		// console.time('Derive Block');
+		// const deriveBlock = await api.derive.chain.getBlock(hash);
+		// console.timeEnd('Derive Block')
 
-		if (deriveBlock === undefined) {
+		console.time('monkey patched Derive')
+		console.time('newValidators')
+		const newValidators = await api.query.session.validators.at(hash);
+		console.timeEnd('newValidators')
+
+		console.time('newBlock')
+		const newBlock = await api.rpc.chain.getBlock(hash);
+		const block = newBlock.block
+		console.timeEnd('newBlock')
+
+		console.time('newDigest')
+		const newDigest = block.header.digest;
+		console.timeEnd('newDigest')
+
+		console.time('extractAuthor')
+		const authorId = extractAuthor(newDigest, newValidators);
+		console.timeEnd('extractAuthor')
+		console.timeEnd('monkey patched Derive')
+
+		console.time('FetchEvents')
+		const events = await this.fetchEvents(api, hash);
+		console.timeEnd('FetchEvents')
+
+		console.time('FinalizedHead')
+		const finalizedHead = queryFinalizedHead ? await api.rpc.chain.getFinalizedHead() : await Promise.resolve(hash)
+		console.timeEnd('FinalizedHead')
+
+		
+		// const [deriveBlock, events, finalizedHead] = await Promise.all([
+		// 	api.derive.chain.getBlock(hash),
+		// 	this.fetchEvents(api, hash),
+		// 	queryFinalizedHead
+		// 		? api.rpc.chain.getFinalizedHead()
+		// 		: Promise.resolve(hash),
+		// ]);
+		console.timeEnd('Init-Promise.all');
+
+		if (block === undefined) {
 			throw new InternalServerError('Error querying for block');
 		}
-		const { block, author: authorId } = deriveBlock;
+		// const { block, author: authorId } = deriveBlock;
 
 		const { parentHash, number, stateRoot, extrinsicsRoot, digest } =
 			block.header;
@@ -118,18 +153,22 @@ export class BlocksService extends AbstractService {
 			return { type, index, value };
 		});
 
+		console.time('nonSanitizedExtrinsics')
 		const nonSanitizedExtrinsics = this.extractExtrinsics(
 			block,
 			events,
 			extrinsicDocs
 		);
+		console.timeEnd('nonSanitizedExtrinsics')
 
+		console.time('sanitizeEvents')
 		const { extrinsics, onInitialize, onFinalize } = this.sanitizeEvents(
 			events,
 			nonSanitizedExtrinsics,
 			hash,
 			eventDocs
 		);
+		console.timeEnd('sanitizeEvents')
 
 		let finalized = undefined;
 
