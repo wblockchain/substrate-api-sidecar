@@ -7,6 +7,7 @@ import {
 	AccountsVestingInfo,
 } from './accounts';
 import { Blocks, BlocksExtrinsics, BlocksTrace } from './blocks';
+import { Nicks } from './nicks';
 import { NodeNetwork, NodeTransactionPool, NodeVersion } from './node';
 import {
 	PalletsAssets,
@@ -49,4 +50,5 @@ export const controllers = {
 	TransactionMaterial,
 	TransactionSubmit,
 	Paras,
+	Nicks,
 };

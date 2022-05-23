@@ -76,7 +76,13 @@ async function main() {
 	// Create our App
 	const app = new App({
 		preMiddleware: [json(), middleware.httpLoggerCreate(logger)],
-		controllers: getControllersForSpec(api, specName.toString()),
+		controllers: getControllersForSpec(
+			api,
+			// little hack used to make node-template work with out renaming and rebuilding the binary...can be removed later
+			specName.toString() === 'node-template'
+				? 'development'
+				: specName.toString()
+		),
 		postMiddleware: [
 			middleware.txError,
 			middleware.httpError,

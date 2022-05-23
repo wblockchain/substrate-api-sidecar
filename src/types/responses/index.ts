@@ -10,6 +10,7 @@ export * from './EraPayouts';
 export * from './Extrinsic';
 export * from './FrameMethod';
 export * from './MetadataCode';
+export * from './NicksNickname';
 export * from './NodeNetwork';
 export * from './NodeTransactionPool';
 export * from './NodeVersion';

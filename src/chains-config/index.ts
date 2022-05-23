@@ -10,6 +10,7 @@ import { bifrostControllers } from './bifrostControllers';
 import { calamariControllers } from './calamariControllers';
 import { crustControllers } from './crustControllers';
 import { defaultControllers } from './defaultControllers';
+import { developmentControllers } from './developmentControllers';
 import { dockMainnetControllers } from './dockMainnetControllers';
 import { dockPoSMainnetControllers } from './dockPoSMainnetControllers';
 import { dockTestnetControllers } from './dockPoSTestnetControllers';
@@ -51,6 +52,7 @@ const specToControllerMap = {
 	manta: mantaControllers,
 	crust: crustControllers,
 	bifrost: bifrostControllers,
+	development: developmentControllers,
 };
 
 /**
