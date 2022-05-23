@@ -1,6 +1,7 @@
 // import { u128 } from '@polkadot/types/primitive';
-// import { IAt } from '.';
 import { Balance } from '@polkadot/types/interfaces';
+
+import { IAt } from '.';
 
 // export interface INickname {
 // 	/**
@@ -14,14 +15,15 @@ import { Balance } from '@polkadot/types/interfaces';
 // }
 
 export interface INickname {
+	at: IAt;
 	/**
 	 * The nickname registered for an address
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	nickname: any;
+	nickname: string | null;
 	/**
 	 * The units in which substrate records balances.
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	deposit: Balance;
+	deposit: Balance | null;
 }
