@@ -1,7 +1,9 @@
 // import { ApiDecoration } from '@polkadot/api/types';
 // import { bool, Null, Struct, u128, } from '@polkadot/types';
-import { StorageKey } from '@polkadot/types';
+import { Bytes, Option, StorageKey } from '@polkadot/types';
 import { AssetId, Balance, BlockHash } from '@polkadot/types/interfaces';
+import { ITuple } from '@polkadot/types/types';
+import { u8aToString } from '@polkadot/util';
 
 // import { u128 } from '@polkadot/types/primitive';
 // import { BadRequest } from 'http-errors';
@@ -17,24 +19,35 @@ export class NicksService extends AbstractService {
 	 */
 	async fetchNickname(hash: BlockHash, address: string): Promise<INickname> {
 		const { api } = this;
-		// const { number } = await api.rpc.chain.getHeader(hash);
-		// const response = await api.query.nicks.nameOf(address) as <ITuple<[Bytes, Balance]>>
-		const response = await api.query.nicks.nameOf(address);
-		console.log('Keys', Object.keys(response));
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const nickname = response[0];
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const deposit: Balance = response[1];
-		console.log('Hash', hash);
-		console.log('Nickname:', nickname);
-		console.log('Response:', response);
-		console.log('hello');
+		const historicApi = await api.at(hash);
+
+		const { number } = await api.rpc.chain.getHeader(hash);
+		const response = await historicApi.query.nicks.nameOf<
+			Option<ITuple<[Bytes, Balance]>>
+		>(address);
+		const at = {
+			hash,
+			height: number.toNumber().toString(10),
+		};
+		let nickname, deposit;
+		if (response?.isSome) {
+			const someResponse = response.unwrap();
+			nickname = u8aToString(someResponse[0]);
+			deposit = someResponse[1];
+
+			return {
+				at,
+				nickname,
+				deposit,
+			};
+		}
 
 		return {
+			at,
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-			nickname: nickname,
+			nickname: null,
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-			deposit: deposit,
+			deposit: null,
 		};
 		// deposit: { hash: hash, height: number.toString() },
 	}
